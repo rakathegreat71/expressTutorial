@@ -3,8 +3,11 @@ var express = require("express");
 var bodyParser = require("body-parser");
 var path = require("path");
 var expressValidator = require("express-validator");
+var mongojs = require("mongojs");
 // end
 
+// creating db
+var db = mongojs('expressTutorial',['users']);
 
 
 // initializing app
@@ -37,6 +40,12 @@ app.use(expressValidator({
 	}
 }))
 
+// adding global variable
+app.use(function (req, res, next) {
+	res.locals.errors = null;
+	next();
+})
+
 
 
 // adding middleware body-parser, it will parse the form when submitted
@@ -45,7 +54,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 // end of body-parser middle ware
 
 // set static path
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '/public')));
 
 
 // set view Engine
@@ -55,63 +64,71 @@ app.set('views', path.join(__dirname, 'views'));
 
 
 // creating server at 3000 port
-app.listen(3000, function(req, res) {
-	console.log("server started at port 3000.....");
+app.listen(4000, function(req, res) {
+	console.log("server started at port 4000.....");
 });
 // end
 
 
-// making data to pass at ejs page
-var users = [
-{
-	id:1,
-	firstName: "rakesh",
-	lastName: "sharma",
-	email:"rakesh.sharma8320@gmail.com"
-},
-{
-	id:2,
-	firstName: "nitin",
-	lastName: "sharma",
-	email:"nitin.sharma8320@gmail.com"
-},
-{
-	id:3,
-	firstName: "sachin",
-	lastName: "sharma",
-	email:"sachin.sharma8320@gmail.com"
-}
-]
-
-
-
-var obj = {
-		title: "express tutorial",
-		users: users
-	}
 
 // adding default route
 app.get("/", function(req, res){
-	
-	res.render("index",obj);
+	db.users.find(function (err, data) {
+		console.log(data);
+		obj = {
+			title: "exress tutorial",
+			users: data
+		}
+		res.render("index",obj );
+	})
 });
 
 app.post("/users/add", function(req, res){
 	req.checkBody('firstName', 'first name is required').notEmpty();
 	req.checkBody('lastName', 'last name is required').notEmpty();
 	req.checkBody('email', 'email is required').notEmpty();
+	
 
-	var errors = req.validationErrors();
-	if(errors){
-		obj.errors = errors
-		res.render("index",obj);
-		console.log(obj);
-	}
-	else{
-		firstName = req.body.firstName;
-		lastName = req.body.lastName;
-		email = req.body.email;
-	console.log("form submitted");
-	res.send(req.body.firstName );
-	} 	
+	db.users.find(function (err, data) {
+		var errors = req.validationErrors();
+		if(errors){
+			res.render("index",{
+				title: "express tutorials",
+				users: data,
+				errors: errors
+			});
+		}
+		else{
+			var newUser = {
+				firstName :req.body.firstName,
+				lastName :req.body.lastName,
+				email :req.body.email	
+			}
+			db.users.insert(newUser, function (err, result) {
+				if (err) {
+					console.log("error in inserting");
+				}
+			})
+			console.log("form submitted");
+			res.redirect("/");
+		}	
+	})
+
 })
+
+app.delete('/user/delete/:id', function (req, res) {
+	db.users.remove({_id: mongojs.ObjectId(req.params.id)},function (err, result) {
+		if (err) {
+			console.log(err);
+		}
+	res.redirect('/');
+		
+			
+		
+	});
+})
+
+
+
+// ADDING database functions
+

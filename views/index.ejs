@@ -1,10 +1,19 @@
 <% include partials/header %>
+
+<% if (errors) {%>
+<ul>
+	<%errors.forEach(function (error) {%>
+		<li><%= error.msg  %></li>
+	<% })%>
+</ul>
+<%} %>
 <% include partials/form %>
 
-<h1><%= title  %></h1>
+<div id = "person">
 <ul>
 <% users.forEach(function (user) { %>
-	<li><%= user.firstName  %>&nbsp; <%= user.lastName  %></li>
+	<li><%= user.firstName  %>&nbsp; <%= user.lastName  %> <a href="#" class="deleteUser" data-id=<%= user._id  %>>delete</a></li>
 <% }) %>
 </ul>
+</div>
 <% include partials/footer  %>
